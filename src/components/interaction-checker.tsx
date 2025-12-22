@@ -28,6 +28,22 @@ export function InteractionChecker() {
 
   const sortedDrugs = useMemo(() => [...drugs].sort((a, b) => a.name.localeCompare(b.name)), [drugs]);
 
+  const interactingDrugs = useMemo(() => {
+    if (!drug1Id) return [];
+    
+    const interactingDrugIds = new Set<string>();
+    interactions.forEach(interaction => {
+      if (interaction.drug1Id === drug1Id) {
+        interactingDrugIds.add(interaction.drug2Id);
+      }
+      if (interaction.drug2Id === drug1Id) {
+        interactingDrugIds.add(interaction.drug1Id);
+      }
+    });
+
+    return sortedDrugs.filter(drug => interactingDrugIds.has(drug.id));
+  }, [drug1Id, interactions, sortedDrugs]);
+
   useEffect(() => {
     if (drug1Id && drug2Id) {
       if (drug1Id === drug2Id) {
@@ -45,6 +61,12 @@ export function InteractionChecker() {
     }
   }, [drug1Id, drug2Id, interactions]);
 
+  const handleDrug1Change = (value: string) => {
+    setDrug1Id(value);
+    setDrug2Id(null);
+    setFoundInteraction(null);
+  }
+
   return (
     <div className="space-y-8">
       <Card className="shadow-lg animate-in fade-in-50 duration-500">
@@ -56,28 +78,28 @@ export function InteractionChecker() {
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <Select onValueChange={setDrug1Id} value={drug1Id || ''}>
+            <Select onValueChange={handleDrug1Change} value={drug1Id || ''}>
               <SelectTrigger id="drug1">
                 <SelectValue placeholder="Select first drug" />
               </SelectTrigger>
               <SelectContent>
                 {sortedDrugs.map((drug) => (
-                  <SelectItem key={drug.id} value={drug.id} disabled={drug.id === drug2Id}>
+                  <SelectItem key={drug.id} value={drug.id}>
                     {drug.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            <Select onValueChange={setDrug2Id} value={drug2Id || ''}>
+            <Select onValueChange={setDrug2Id} value={drug2Id || ''} disabled={!drug1Id}>
               <SelectTrigger id="drug2">
                 <SelectValue placeholder="Select second drug" />
               </SelectTrigger>
               <SelectContent>
-                {sortedDrugs.map((drug) => (
-                  <SelectItem key={drug.id} value={drug.id} disabled={drug.id === drug1Id}>
+                {interactingDrugs.length > 0 ? interactingDrugs.map((drug) => (
+                  <SelectItem key={drug.id} value={drug.id}>
                     {drug.name}
                   </SelectItem>
-                ))}
+                )) : <p className="p-4 text-sm text-muted-foreground">No interactions found for the first drug.</p>}
               </SelectContent>
             </Select>
           </div>
