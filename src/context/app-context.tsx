@@ -8,20 +8,25 @@ import { applyEvent, createInitialState } from '@/lib/events';
 import initialEventData from '../../DB/events.json';
 
 // Slices
-import type { AddDrugCommand } from '../app/actions/add-drug/command';
-import { handleAddDrugCommand } from '../app/actions/add-drug/command-handler';
+import type { AddDrugCommand } from '@/app/actions/add-drug/command';
+import { handleAddDrugCommand } from '@/app/actions/add-drug/command-handler';
 
-import type { DeleteDrugCommand } from '../app/actions/delete-drug/command';
-import { handleDeleteDrugCommand } from '../app/actions/delete-drug/command-handler';
+import type { DeleteDrugCommand } from '@/app/actions/delete-drug/command';
+import { handleDeleteDrugCommand } from '@/app/actions/delete-drug/command-handler';
 
-import type { AddInteractionCommand } from '../app/actions/add-interaction/command';
-import { handleAddInteractionCommand } from '../app/actions/add-interaction/command-handler';
+import type { AddInteractionCommand } from '@/app/actions/add-interaction/command';
+import { handleAddInteractionCommand } from '@/app/actions/add-interaction/command-handler';
 
-import type { UpdateInteractionCommand } from '../app/actions/update-interaction/command';
-import { handleUpdateInteractionCommand } from '../app/actions/update-interaction/command-handler';
+import type { UpdateInteractionCommand } from '@/app/actions/update-interaction/command';
+import { handleUpdateInteractionCommand } from '@/app/actions/update-interaction/command-handler';
 
-import type { DeleteInteractionCommand } from '../app/actions/delete-interaction/command';
-import { handleDeleteInteractionCommand } from '../app/actions/delete-interaction/command-handler';
+import type { DeleteInteractionCommand } from '@/app/actions/delete-interaction/command';
+import { handleDeleteInteractionCommand } from '@/app/actions/delete-interaction/command-handler';
+
+// Projections
+import { useListeDesMedicaments } from '@/app/projections/liste-des-medicaments/projection';
+import { useListeDesInteractions } from '@/app/projections/liste-des-interactions/projection';
+
 
 // --- React Context ---
 
@@ -52,12 +57,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     return events.reduce(applyEvent, initialState);
   }, [events]);
 
-  const { drugs, interactions } = useMemo(() => {
-    return {
-      drugs: Array.from(appState.drugs.values()),
-      interactions: Array.from(appState.interactions.values()),
-    };
-  }, [appState]);
+  // Use projection slices to get the read models
+  const drugs = useListeDesMedicaments(appState);
+  const interactions = useListeDesInteractions(appState);
+
 
   // --- Authentication Slice ---
   const login = () => setIsAuthenticated(true);

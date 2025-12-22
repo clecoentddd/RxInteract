@@ -13,7 +13,10 @@ State change slice
 - Event.js: le format de l'event a son propre fichier
 
 State View slice - projection
-- Live projection: rejoue les events 
+- Live projection: rejoue les events
+- ListeDesMedicaments
+- ListeDesInteractions
+- etc 
 
 AjouterUnMedicament
     - MedicamentAjoutée

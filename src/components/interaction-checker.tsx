@@ -5,7 +5,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppContext } from '@/context/app-context';
 import type { Interaction } from '@/lib/types';
-import { AlertTriangle, Shield, ShieldAlert, ShieldCheck, Info, Pill } from 'lucide-react';
+import { AlertTriangle, Shield, ShieldAlert, Info, Pill } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 
@@ -28,7 +28,7 @@ export function InteractionChecker() {
   const [drug2Id, setDrug2Id] = useState<string | null>(null);
   const [foundInteraction, setFoundInteraction] = useState<Interaction | null>(null);
 
-  const sortedDrugs = useMemo(() => [...drugs].sort((a, b) => a.name.localeCompare(b.name)), [drugs]);
+  const sortedDrugs = useMemo(() => [...drugs], [drugs]);
 
   const interactingDrugs = useMemo(() => {
     if (!drug1Id) return [];
@@ -137,7 +137,7 @@ export function InteractionChecker() {
                  <div>
                     <h3 className="font-semibold text-foreground mb-2">Recommendation</h3>
                     {foundInteraction.reco && <Badge variant="outline" className="mb-2">{foundInteraction.reco}</Badge>}
-                    <p className="text-muted-foreground">{foundInteraction.reco_details.join(' ')}</p>
+                    <p className="text-muted-foreground">{Array.isArray(foundInteraction.reco_details) ? foundInteraction.reco_details.join(' ') : foundInteraction.reco_details}</p>
                  </div>
               </CardContent>
             </Card>

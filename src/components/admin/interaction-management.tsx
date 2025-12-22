@@ -35,11 +35,7 @@ export function InteractionManagement() {
     const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
 
     const sortedDrugs = useMemo(() => [...drugs].sort((a, b) => a.name.localeCompare(b.name)), [drugs]);
-    const sortedInteractions = useMemo(() => [...interactions].sort((a,b) => {
-        const drug1Name = getDrugById(a.drug1Id)?.name || '';
-        const drug2Name = getDrugById(b.drug1Id)?.name || '';
-        return drug1Name.localeCompare(drug2Name);
-    }), [interactions, getDrugById]);
+    const sortedInteractions = useMemo(() => [...interactions], [interactions]);
 
     const form = useForm<z.infer<typeof interactionFormSchema>>({
         resolver: zodResolver(interactionFormSchema),
@@ -56,9 +52,7 @@ export function InteractionManagement() {
         if (isDialogOpen) {
             form.reset(editingInteraction ? {
                 ...editingInteraction,
-                // The form expects reco_details as a flat array, but our component uses a string.
-                // This is a mismatch we need to handle. For simplicity, we'll join and let the user edit.
-                reco_details: Array.isArray(editingInteraction.reco_details) ? editingInteraction.reco_details.join('\n') : editingInteraction.reco_details,
+                reco_details: Array.isArray(editingInteraction.reco_details) ? editingInteraction.reco_details.join('\n') : editingInteraction.reco_details || "",
             } : { drug1Id: '', drug2Id: '', description: '', reco: '', reco_details: [] });
         }
     }, [isDialogOpen, editingInteraction, form]);
