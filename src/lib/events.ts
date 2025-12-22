@@ -7,19 +7,8 @@ export function createInitialState(): AppState {
     };
 }
 
-// This function processes all events to build the current state.
-export function applyEvents(initialState: AppState, events: AppEvent[]): { drugs: Drug[], interactions: Interaction[] } {
-    const state = events.reduce(applyEvent, initialState);
-    
-    const drugs = Array.from(state.drugs.values());
-    const interactions = Array.from(state.interactions.values());
-
-    return { drugs, interactions };
-}
-
-
-// This function applies a single event to the state.
-function applyEvent(state: AppState, event: AppEvent): AppState {
+// This function applies a single event to the state. It is used with reduce.
+export function applyEvent(state: AppState, event: AppEvent): AppState {
     switch (event.metadata.event_type) {
         case 'DrugAdded': {
             const payload = event.payload as { drug: string, uuid?: string };
@@ -58,7 +47,7 @@ function applyEvent(state: AppState, event: AppEvent): AppState {
                 if (!severity) { // Derive severity for older events
                     if (payload.reco?.includes('CONTRE-INDICATION')) severity = 'Severe';
                     else if (payload.reco?.includes('DECONSEILLEE')) severity = 'Moderate';
-                    else if (payload.reco?.includes('Précaution')) severity = 'Mild';
+                    else severity = 'Mild';
                 }
 
                 const interaction: Interaction = {

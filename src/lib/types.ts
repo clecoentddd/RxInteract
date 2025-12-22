@@ -17,7 +17,7 @@ export type Interaction = {
   reco_details: string[];
 };
 
-export const interactionSchema = z.object({
+export const interactionFormSchema = z.object({
   drug1Id: z.string().min(1, 'Please select the first drug.'),
   drug2Id: z.string().min(1, 'Please select the second drug.'),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
@@ -25,35 +25,34 @@ export const interactionSchema = z.object({
   reco_details: z.string().transform(val => val.split('\n').filter(s => s.trim() !== '')),
 });
 
-export type InteractionFormValues = z.infer<typeof interactionSchema>;
-
+export type InteractionFormValues = z.infer<typeof interactionFormSchema>;
 
 // Event Sourcing Types
-type EventMetadata = {
+export type EventMetadata = {
   event_type: string;
   timestamp: number;
   uuid: string;
 };
 
-type DrugAddedPayload = {
+export type DrugAddedPayload = {
   drug: string;
   drug_details: string[];
   uuid?: string;
 };
 
-type InteractionAddedPayload = Omit<Interaction, 'id' | 'description' | 'severity'> & {
+export type InteractionAddedPayload = Omit<Interaction, 'id' | 'description' | 'severity'> & {
     description: string[];
 };
 
-type DrugDeletedPayload = {
+export type DrugDeletedPayload = {
     drugId: string;
 };
 
-type InteractionDeletedPayload = {
+export type InteractionDeletedPayload = {
     interactionId: string;
 };
 
-type InteractionUpdatedPayload = Partial<Omit<Interaction, 'drug1Id' | 'drug2Id'>> & {id: string};
+export type InteractionUpdatedPayload = Partial<Omit<Interaction, 'drug1Id' | 'drug2Id'>> & {id: string};
 
 
 export type AppEvent = {

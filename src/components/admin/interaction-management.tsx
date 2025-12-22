@@ -12,9 +12,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter, DialogC
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
-import { useToast } from '@/hooks/use-toast';
-import type { Interaction, InteractionFormValues } from '@/lib/types';
-import { interactionSchema } from '@/lib/types';
+import type { Interaction } from '@/lib/types';
+import { interactionFormSchema } from '@/lib/types';
+import type { AddInteractionCommand } from '@/app/actions/add-interaction/command';
+import type { UpdateInteractionCommand } from '@/app/actions/update-interaction/command';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -30,7 +31,6 @@ import {
 
 export function InteractionManagement() {
     const { drugs, interactions, getDrugById, addInteraction, updateInteraction, deleteInteraction } = useAppContext();
-    const { toast } = useToast();
     const [isDialogOpen, setDialogOpen] = useState(false);
     const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
 
@@ -41,31 +41,8 @@ export function InteractionManagement() {
         return drug1Name.localeCompare(drug2Name);
     }), [interactions, getDrugById]);
 
-    const form = useForm<InteractionFormValues>({
-        resolver: zodResolver(interactionSchema.refine(data => data.drug1Id !== data.drug2Id, {
-            message: "The two drugs must be different.",
-            path: ["drug2Id"],
-        }).refine(data => {
-            if (editingInteraction) return true;
-            
-            const drug1 = getDrugById(data.drug1Id);
-            const drug2 = getDrugById(data.drug2Id);
-            if (!drug1 || !drug2) return true; // Let other validators handle this
-
-            const drug1Name = drug1.name.toLowerCase();
-            const drug2Name = drug2.name.toLowerCase();
-
-            const exists = interactions.some(i => {
-                const existingDrug1 = getDrugById(i.drug1Id)?.name.toLowerCase();
-                const existingDrug2 = getDrugById(i.drug2Id)?.name.toLowerCase();
-                return (existingDrug1 === drug1Name && existingDrug2 === drug2Name) ||
-                       (existingDrug1 === drug2Name && existingDrug2 === drug1Name)
-            });
-            return !exists;
-        }, {
-            message: "An interaction between these two drugs already exists.",
-            path: ["drug2Id"],
-        })),
+    const form = useForm<z.infer<typeof interactionFormSchema>>({
+        resolver: zodResolver(interactionFormSchema),
         defaultValues: {
             drug1Id: '',
             drug2Id: '',
@@ -79,7 +56,9 @@ export function InteractionManagement() {
         if (isDialogOpen) {
             form.reset(editingInteraction ? {
                 ...editingInteraction,
-                reco_details: editingInteraction.reco_details.join('\n'),
+                // The form expects reco_details as a flat array, but our component uses a string.
+                // This is a mismatch we need to handle. For simplicity, we'll join and let the user edit.
+                reco_details: Array.isArray(editingInteraction.reco_details) ? editingInteraction.reco_details.join('\n') : editingInteraction.reco_details,
             } : { drug1Id: '', drug2Id: '', description: '', reco: '', reco_details: [] });
         }
     }, [isDialogOpen, editingInteraction, form]);
@@ -90,20 +69,19 @@ export function InteractionManagement() {
         setDialogOpen(true);
     };
 
-    function onSubmit(values: InteractionFormValues) {
+    function onSubmit(values: z.infer<typeof interactionFormSchema>) {
         if (editingInteraction) {
-            updateInteraction(editingInteraction.id, values);
-            toast({ title: 'Success', description: 'Interaction updated.' });
+            const command: UpdateInteractionCommand = { id: editingInteraction.id, ...values };
+            updateInteraction(command);
         } else {
-            addInteraction(values);
-            toast({ title: 'Success', description: 'Interaction added.' });
+            const command: AddInteractionCommand = values;
+            addInteraction(command);
         }
         setDialogOpen(false);
     }
     
     function handleDelete(id: string) {
-        deleteInteraction(id);
-        toast({ title: 'Success', description: `Interaction deleted.` });
+        deleteInteraction({ interactionId: id });
     }
 
     return (
@@ -228,7 +206,7 @@ export function InteractionManagement() {
                                 <FormField control={form.control} name="reco_details" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Recommendation Details</FormLabel>
-                                        <FormControl><Textarea placeholder="Provide details for the recommendation, one per line..." {...field} rows={3} /></FormControl>
+                                        <FormControl><Textarea placeholder="Provide details for the recommendation, one per line..." {...field} value={Array.isArray(field.value) ? field.value.join('\n') : field.value} rows={3} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>

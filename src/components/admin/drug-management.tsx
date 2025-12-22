@@ -2,7 +2,6 @@
 
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
 import { useAppContext } from '@/context/app-context';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '@/components/ui/form';
@@ -10,7 +9,6 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { PlusCircle, Trash2 } from 'lucide-react';
-import { useToast } from '@/hooks/use-toast';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -22,29 +20,24 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-
-const drugSchema = z.object({
-  name: z.string().min(2, 'Drug name must be at least 2 characters.'),
-});
+import type { AddDrugCommand } from '@/app/actions/add-drug/command';
+import { AddDrugCommandSchema } from '@/app/actions/add-drug/command';
 
 export function DrugManagement() {
   const { drugs, addDrug, deleteDrug } = useAppContext();
-  const { toast } = useToast();
 
-  const form = useForm<z.infer<typeof drugSchema>>({
-    resolver: zodResolver(drugSchema),
+  const form = useForm<AddDrugCommand>({
+    resolver: zodResolver(AddDrugCommandSchema),
     defaultValues: { name: '' },
   });
 
-  function onSubmit(values: z.infer<typeof drugSchema>) {
-    addDrug(values.name);
-    // Toast is handled in context to avoid double-toasting on error
+  function onSubmit(command: AddDrugCommand) {
+    addDrug(command);
     form.reset();
   }
   
   function handleDelete(id: string, name: string) {
-    deleteDrug(id);
-    toast({ title: 'Success', description: `Drug "${name}" and its interactions have been deleted.` });
+    deleteDrug({ drugId: id, drugName: name });
   }
 
   return (

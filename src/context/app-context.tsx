@@ -1,11 +1,27 @@
+// src/context/app-context.tsx
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode, useMemo } from 'react';
-import type { Drug, Interaction, InteractionFormValues, AppEvent } from '@/lib/types';
+import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
+import type { Drug, Interaction, AppEvent, AppState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { applyEvents, createInitialState } from '@/lib/events';
+import { applyEvent, createInitialState } from '@/lib/events';
 import initialEventData from '../../DB/events.json';
 
+// Slices
+import type { AddDrugCommand } from '../app/actions/add-drug/command';
+import { handleAddDrugCommand } from '../app/actions/add-drug/command-handler';
+
+import type { DeleteDrugCommand } from '../app/actions/delete-drug/command';
+import { handleDeleteDrugCommand } from '../app/actions/delete-drug/command-handler';
+
+import type { AddInteractionCommand } from '../app/actions/add-interaction/command';
+import { handleAddInteractionCommand } from '../app/actions/add-interaction/command-handler';
+
+import type { UpdateInteractionCommand } from '../app/actions/update-interaction/command';
+import { handleUpdateInteractionCommand } from '../app/actions/update-interaction/command-handler';
+
+import type { DeleteInteractionCommand } from '../app/actions/delete-interaction/command';
+import { handleDeleteInteractionCommand } from '../app/actions/delete-interaction/command-handler';
 
 // --- React Context ---
 
@@ -15,11 +31,11 @@ interface AppContextType {
   logout: () => void;
   drugs: Drug[];
   interactions: Interaction[];
-  addDrug: (name: string) => void;
-  deleteDrug: (id: string) => void;
-  addInteraction: (data: InteractionFormValues) => void;
-  updateInteraction: (id: string, data: Partial<InteractionFormValues>) => void;
-  deleteInteraction: (id: string) => void;
+  addDrug: (command: AddDrugCommand) => void;
+  deleteDrug: (command: DeleteDrugCommand) => void;
+  addInteraction: (command: AddInteractionCommand) => void;
+  updateInteraction: (command: UpdateInteractionCommand) => void;
+  deleteInteraction: (command: DeleteInteractionCommand) => void;
   getDrugById: (id: string) => Drug | undefined;
 }
 
@@ -30,102 +46,59 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [events, setEvents] = useState<AppEvent[]>(initialEventData as AppEvent[]);
 
-  const { drugs, interactions } = useMemo(() => applyEvents(createInitialState(), events), [events]);
+  // State Projection (Read Model)
+  const appState: AppState = useMemo(() => {
+    const initialState = createInitialState();
+    return events.reduce(applyEvent, initialState);
+  }, [events]);
 
+  const { drugs, interactions } = useMemo(() => {
+    return {
+      drugs: Array.from(appState.drugs.values()),
+      interactions: Array.from(appState.interactions.values()),
+    };
+  }, [appState]);
+
+  // --- Authentication Slice ---
   const login = () => setIsAuthenticated(true);
   const logout = () => setIsAuthenticated(false);
 
-  const getDrugById = (id: string) => drugs.find(d => d.id === id);
+  const getDrugById = useCallback((id: string) => appState.drugs.get(id), [appState.drugs]);
 
-  const appendEvent = (event: AppEvent) => {
-      console.log("New event:", event);
-      setEvents(prev => [...prev, event]);
-  }
-
-  const addDrug = (name: string) => {
-    if (drugs.some(d => d.name.toLowerCase() === name.toLowerCase())) {
-        toast({
-            variant: "destructive",
-            title: "Error adding drug",
-            description: "A drug with this name already exists.",
-        });
-        return;
+  // --- Command Dispatcher ---
+  const dispatchCommand = (handler: Function, command: any, successMessage: string) => {
+    try {
+      const newEvent = handler(appState, command);
+      setEvents(prev => [...prev, newEvent]);
+      toast({ title: "Success", description: successMessage });
+    } catch (error: any) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: error.message,
+      });
     }
-    const newEvent: AppEvent = {
-        metadata: {
-            event_type: 'DrugAdded',
-            timestamp: Date.now() / 1000,
-            uuid: `drug_${Date.now()}`
-        },
-        payload: { drug: name.toUpperCase(), drug_details: [] }
-    };
-    appendEvent(newEvent);
-    toast({ title: "Success", description: `Drug "${name}" added.`})
   };
 
-  const deleteDrug = (id: string) => {
-    const newEvent: AppEvent = {
-        metadata: {
-            event_type: 'DrugDeleted',
-            timestamp: Date.now() / 1000,
-            uuid: `evt_${Date.now()}`
-        },
-        payload: { drugId: id }
-    };
-    appendEvent(newEvent);
+  // --- Public API for Components ---
+  const addDrug = (command: AddDrugCommand) => {
+    dispatchCommand(handleAddDrugCommand, command, `Drug "${command.name}" added.`);
   };
 
-  const addInteraction = (data: InteractionFormValues) => {
-    const newEvent: AppEvent = {
-      metadata: {
-        event_type: 'InteractionAdded',
-        timestamp: Date.now() / 1000,
-        uuid: `int_${Date.now()}`,
-      },
-      payload: {
-          ...data,
-          description: [data.description] // Ensure description is an array
-      }
-    };
-    appendEvent(newEvent);
+  const deleteDrug = (command: DeleteDrugCommand) => {
+    dispatchCommand(handleDeleteDrugCommand, command, `Drug "${command.drugName}" and its interactions have been deleted.`);
   };
 
-  const updateInteraction = (id: string, data: Partial<InteractionFormValues>) => {
-    const existingInteraction = interactions.find(i => i.id === id);
-    if (!existingInteraction) return;
-    
-    const payload = { 
-        id, 
-        drug1Id: existingInteraction.drug1Id,
-        drug2Id: existingInteraction.drug2Id,
-        ...data 
-    };
-
-    if (payload.description) {
-        payload.description = [payload.description];
-    }
-    
-    const newEvent: AppEvent = {
-        metadata: {
-            event_type: 'InteractionUpdated',
-            timestamp: Date.now() / 1000,
-            uuid: `evt_${Date.now()}`
-        },
-        payload
-    };
-    appendEvent(newEvent);
+  const addInteraction = (command: AddInteractionCommand) => {
+    dispatchCommand(handleAddInteractionCommand, command, 'Interaction added.');
   };
-  
-  const deleteInteraction = (id: string) => {
-    const newEvent: AppEvent = {
-        metadata: {
-            event_type: 'InteractionDeleted',
-            timestamp: Date.now() / 1000,
-            uuid: `evt_${Date.now()}`
-        },
-        payload: { interactionId: id }
-    };
-    appendEvent(newEvent);
+
+  const updateInteraction = (command: UpdateInteractionCommand) => {
+    dispatchCommand(handleUpdateInteractionCommand, command, 'Interaction updated.');
+  };
+
+  const deleteInteraction = (command: DeleteInteractionCommand) => {
+    dispatchCommand(handleDeleteInteractionCommand, command, 'Interaction deleted.');
   };
 
   const value = {
