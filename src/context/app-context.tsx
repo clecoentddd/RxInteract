@@ -4,7 +4,7 @@
 import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
 import type { Drug, Interaction, AppEvent, AppState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { applyEvent, createInitialState } from '@/lib/events';
+import { applyEvent, createInitialState } from '@/app/data/events';
 import initialEventData from '../../DB/events.json';
 
 // Slices

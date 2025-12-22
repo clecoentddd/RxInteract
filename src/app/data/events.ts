@@ -1,4 +1,4 @@
-import type { AppEvent, AppState, Drug, Interaction, InteractionSeverity } from './types';
+import type { AppEvent, AppState, Drug, Interaction, InteractionSeverity } from '@/lib/types';
 
 export function createInitialState(): AppState {
     return {
@@ -43,12 +43,11 @@ export function applyEvent(state: AppState, event: AppEvent): AppState {
             }
 
             if (drug1Id && drug2Id) {
-                let severity: InteractionSeverity = payload.severity || '';
-                if (!severity) { // Derive severity for older events
-                    if (payload.reco?.includes('CONTRE-INDICATION')) severity = 'Severe';
-                    else if (payload.reco?.includes('DECONSEILLEE')) severity = 'Moderate';
-                    else severity = 'Mild';
-                }
+                let severity: InteractionSeverity = ''
+                if (payload.reco?.includes('CONTRE-INDICATION')) severity = 'Severe';
+                else if (payload.reco?.includes('DECONSEILLEE')) severity = 'Moderate';
+                else if (payload.reco) severity = 'Mild';
+
 
                 const interaction: Interaction = {
                     id: event.metadata.uuid,
@@ -66,12 +65,11 @@ export function applyEvent(state: AppState, event: AppEvent): AppState {
         case 'InteractionUpdated': {
             const payload = event.payload as Interaction;
              if (state.interactions.has(payload.id)) {
-                let severity: InteractionSeverity = payload.severity || '';
-                if (!severity) { // Derive severity if not present
-                    if (payload.reco?.includes('CONTRE-INDICATION')) severity = 'Severe';
-                    else if (payload.reco?.includes('DECONSEILLEE')) severity = 'Moderate';
-                    else severity = 'Mild';
-                }
+                let severity: InteractionSeverity = '';
+                if (payload.reco?.includes('CONTRE-INDICATION')) severity = 'Severe';
+                else if (payload.reco?.includes('DECONSEILLEE')) severity = 'Moderate';
+                else if (payload.reco) severity = 'Mild';
+
                 const existingInteraction = state.interactions.get(payload.id)!;
                 state.interactions.set(payload.id, { 
                     ...existingInteraction,
