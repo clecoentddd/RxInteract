@@ -5,8 +5,12 @@ export function drugAddedReducer(state: AppState, event: AppEvent): AppState {
   if (event.metadata.event_type !== 'DrugAdded') {
     return state;
   }
-  const payload = event.payload as { drug: string };
-  const drug: Drug = { id: event.metadata.uuid, name: payload.drug };
+  const payload = event.payload as { drug: string, drug_details: string[] };
+  const drug: Drug = { 
+    id: event.metadata.uuid, 
+    name: payload.drug,
+    details: payload.drug_details || [] 
+  };
   state.drugs.set(drug.id, drug);
   return state;
 }

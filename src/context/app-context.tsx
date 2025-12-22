@@ -4,29 +4,35 @@
 import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
 import type { Drug, Interaction, AppEvent, AppState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { createInitialState } from '@/app/data/events';
+import { createInitialState, applyEvent } from '@/app/data/events';
 import initialEventData from '../../DB/events.json';
 
-// Slice Command Handlers
+// Slices
 import type { AddDrugCommand } from '@/app/actions/add-drug/command';
 import { handleAddDrugCommand } from '@/app/actions/add-drug/command-handler';
+import { drugAddedReducer } from '@/app/actions/add-drug/reducer';
+
+import type { UpdateDrugCommand } from '@/app/actions/update-drug/command';
+import { handleUpdateDrugCommand } from '@/app/actions/update-drug/command-handler';
+import { drugUpdatedReducer } from '@/app/actions/update-drug/reducer';
+
 import type { DeleteDrugCommand } from '@/app/actions/delete-drug/command';
 import { handleDeleteDrugCommand } from '@/app/actions/delete-drug/command-handler';
+import { drugDeletedReducer } from '@/app/actions/delete-drug/reducer';
+
 import type { AddInteractionCommand } from '@/app/actions/add-interaction/command';
 import { handleAddInteractionCommand } from '@/app/actions/add-interaction/command-handler';
+import { interactionAddedReducer } from '@/app/actions/add-interaction/reducer';
+
 import type { UpdateInteractionCommand } from '@/app/actions/update-interaction/command';
 import { handleUpdateInteractionCommand } from '@/app/actions/update-interaction/command-handler';
+import { interactionUpdatedReducer } from '@/app/actions/update-interaction/reducer';
+
 import type { DeleteInteractionCommand } from '@/app/actions/delete-interaction/command';
 import { handleDeleteInteractionCommand } from '@/app/actions/delete-interaction/command-handler';
-
-// Slice Reducers
-import { drugAddedReducer } from '@/app/actions/add-drug/reducer';
-import { drugDeletedReducer } from '@/app/actions/delete-drug/reducer';
-import { interactionAddedReducer } from '@/app/actions/add-interaction/reducer';
-import { interactionUpdatedReducer } from '@/app/actions/update-interaction/reducer';
 import { interactionDeletedReducer } from '@/app/actions/delete-interaction/reducer';
 
-// Projection Slices
+// Projections
 import { useListeDesMedicaments } from '@/app/projections/liste-des-medicaments/projection';
 import { useListeDesInteractions } from '@/app/projections/liste-des-interactions/projection';
 
@@ -40,6 +46,7 @@ interface AppContextType {
   drugs: Drug[];
   interactions: Interaction[];
   addDrug: (command: AddDrugCommand) => void;
+  updateDrug: (command: UpdateDrugCommand) => void;
   deleteDrug: (command: DeleteDrugCommand) => void;
   addInteraction: (command: AddInteractionCommand) => void;
   updateInteraction: (command: UpdateInteractionCommand) => void;
@@ -51,6 +58,7 @@ const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const eventReducers: Record<string, (state: AppState, event: AppEvent) => AppState> = {
   'DrugAdded': drugAddedReducer,
+  'DrugUpdated': drugUpdatedReducer,
   'DrugDeleted': drugDeletedReducer,
   'InteractionAdded': interactionAddedReducer,
   'InteractionUpdated': interactionUpdatedReducer,
@@ -58,11 +66,7 @@ const eventReducers: Record<string, (state: AppState, event: AppEvent) => AppSta
 };
 
 function applyEvents(events: AppEvent[]): AppState {
-  const state = createInitialState();
-  return events.reduce((currentState, event) => {
-    const reducer = eventReducers[event.metadata.event_type];
-    return reducer ? reducer(currentState, event) : currentState;
-  }, state);
+    return events.reduce(applyEvent, createInitialState());
 }
 
 export const AppProvider = ({ children }: { children: ReactNode }) => {
@@ -104,6 +108,10 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     dispatchCommand(handleAddDrugCommand, command, `Drug "${command.name}" added.`);
   };
 
+   const updateDrug = (command: UpdateDrugCommand) => {
+    dispatchCommand(handleUpdateDrugCommand, command, `Drug "${command.name}" updated.`);
+  };
+
   const deleteDrug = (command: DeleteDrugCommand) => {
     dispatchCommand(handleDeleteDrugCommand, command, `Drug "${command.drugName}" and its interactions have been deleted.`);
   };
@@ -127,6 +135,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     drugs,
     interactions,
     addDrug,
+    updateDrug,
     deleteDrug,
     addInteraction,
     updateInteraction,

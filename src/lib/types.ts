@@ -3,6 +3,7 @@ import { z } from 'zod';
 export type Drug = {
   id: string;
   name: string;
+  details: string[];
 };
 
 export type InteractionSeverity = 'Mild' | 'Moderate' | 'Severe' | '';
@@ -40,6 +41,12 @@ export type DrugAddedPayload = {
   uuid?: string;
 };
 
+export type DrugUpdatedPayload = {
+  id: string;
+  name: string;
+  details: string[];
+}
+
 export type InteractionAddedPayload = Omit<Interaction, 'id' | 'description' | 'severity'> & {
     description: string[];
 };
@@ -57,7 +64,7 @@ export type InteractionUpdatedPayload = Partial<Omit<Interaction, 'drug1Id' | 'd
 
 export type AppEvent = {
   metadata: EventMetadata;
-  payload: DrugAddedPayload | InteractionAddedPayload | DrugDeletedPayload | InteractionUpdatedPayload | { [key: string]: any };
+  payload: DrugAddedPayload | DrugUpdatedPayload | InteractionAddedPayload | DrugDeletedPayload | InteractionUpdatedPayload | { [key: string]: any };
 };
 
 // State slices
