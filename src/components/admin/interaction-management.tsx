@@ -34,9 +34,6 @@ const interactionSchema = z.object({
   drug2Id: z.string().min(1, 'Please select the second drug.'),
   severity: z.enum(severities),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
-}).refine(data => data.drug1Id !== data.drug2Id, {
-    message: "The two drugs must be different.",
-    path: ["drug2Id"],
 });
 
 
@@ -51,7 +48,22 @@ export function InteractionManagement() {
     const sortedDrugs = useMemo(() => [...drugs].sort((a, b) => a.name.localeCompare(b.name)), [drugs]);
 
     const form = useForm<InteractionFormValues>({
-        resolver: zodResolver(interactionSchema),
+        resolver: zodResolver(interactionSchema.refine(data => data.drug1Id !== data.drug2Id, {
+            message: "The two drugs must be different.",
+            path: ["drug2Id"],
+        }).refine(data => {
+            // This validation is only for new interactions
+            if (editingInteraction) return true;
+            
+            const exists = interactions.some(i => 
+                (i.drug1Id === data.drug1Id && i.drug2Id === data.drug2Id) ||
+                (i.drug1Id === data.drug2Id && i.drug2Id === data.drug1Id)
+            );
+            return !exists;
+        }, {
+            message: "An interaction between these two drugs already exists.",
+            path: ["drug2Id"],
+        })),
         defaultValues: {
             drug1Id: '',
             drug2Id: '',
@@ -173,7 +185,7 @@ export function InteractionManagement() {
                                 <FormField control={form.control} name="drug1Id" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Drug 1</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingInteraction}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="Select a drug" /></SelectTrigger></FormControl>
                                             <SelectContent>{sortedDrugs.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                                         </Select>
@@ -183,7 +195,7 @@ export function InteractionManagement() {
                                  <FormField control={form.control} name="drug2Id" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Drug 2</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
+                                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingInteraction}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="Select a drug" /></SelectTrigger></FormControl>
                                             <SelectContent>{sortedDrugs.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                                         </Select>
