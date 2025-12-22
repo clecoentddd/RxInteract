@@ -4,26 +4,29 @@
 import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
 import type { Drug, Interaction, AppEvent, AppState } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
-import { applyEvent, createInitialState } from '@/app/data/events';
+import { createInitialState } from '@/app/data/events';
 import initialEventData from '../../DB/events.json';
 
-// Slices
+// Slice Command Handlers
 import type { AddDrugCommand } from '@/app/actions/add-drug/command';
 import { handleAddDrugCommand } from '@/app/actions/add-drug/command-handler';
-
 import type { DeleteDrugCommand } from '@/app/actions/delete-drug/command';
 import { handleDeleteDrugCommand } from '@/app/actions/delete-drug/command-handler';
-
 import type { AddInteractionCommand } from '@/app/actions/add-interaction/command';
 import { handleAddInteractionCommand } from '@/app/actions/add-interaction/command-handler';
-
 import type { UpdateInteractionCommand } from '@/app/actions/update-interaction/command';
 import { handleUpdateInteractionCommand } from '@/app/actions/update-interaction/command-handler';
-
 import type { DeleteInteractionCommand } from '@/app/actions/delete-interaction/command';
 import { handleDeleteInteractionCommand } from '@/app/actions/delete-interaction/command-handler';
 
-// Projections
+// Slice Reducers
+import { drugAddedReducer } from '@/app/actions/add-drug/reducer';
+import { drugDeletedReducer } from '@/app/actions/delete-drug/reducer';
+import { interactionAddedReducer } from '@/app/actions/add-interaction/reducer';
+import { interactionUpdatedReducer } from '@/app/actions/update-interaction/reducer';
+import { interactionDeletedReducer } from '@/app/actions/delete-interaction/reducer';
+
+// Projection Slices
 import { useListeDesMedicaments } from '@/app/projections/liste-des-medicaments/projection';
 import { useListeDesInteractions } from '@/app/projections/liste-des-interactions/projection';
 
@@ -46,16 +49,29 @@ interface AppContextType {
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
+const eventReducers: Record<string, (state: AppState, event: AppEvent) => AppState> = {
+  'DrugAdded': drugAddedReducer,
+  'DrugDeleted': drugDeletedReducer,
+  'InteractionAdded': interactionAddedReducer,
+  'InteractionUpdated': interactionUpdatedReducer,
+  'InteractionDeleted': interactionDeletedReducer,
+};
+
+function applyEvents(events: AppEvent[]): AppState {
+  const state = createInitialState();
+  return events.reduce((currentState, event) => {
+    const reducer = eventReducers[event.metadata.event_type];
+    return reducer ? reducer(currentState, event) : currentState;
+  }, state);
+}
+
 export const AppProvider = ({ children }: { children: ReactNode }) => {
   const { toast } = useToast();
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [events, setEvents] = useState<AppEvent[]>(initialEventData as AppEvent[]);
 
   // State Projection (Read Model)
-  const appState: AppState = useMemo(() => {
-    const initialState = createInitialState();
-    return events.reduce(applyEvent, initialState);
-  }, [events]);
+  const appState: AppState = useMemo(() => applyEvents(events), [events]);
 
   // Use projection slices to get the read models
   const drugs = useListeDesMedicaments(appState);

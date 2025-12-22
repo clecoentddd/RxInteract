@@ -1,5 +1,7 @@
 Vertical Slice Architecture et Event Sourcing
 
+Slices are independant - there is no central logic as each slice carries its own logic.
+
 Application de Event Modeling
 
 Une slice = un folder
