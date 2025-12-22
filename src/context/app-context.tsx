@@ -37,14 +37,16 @@ function applyEvents(events: AppEvent[]): { drugs: Drug[], interactions: Interac
                 const drug2 = drugs.find(d => d.name === payload.drug_name2);
 
                 if (drug1 && drug2) {
-                    const reco = (payload.reco_details?.[0] || '').replace('Association DECONSEILLEE.', 'Moderate').replace('CONTRE-INDICATION', 'Severe').replace('Précaution d\'emploi', 'Mild').trim() as InteractionSeverity;
+                    const recoSeverity = (payload.reco_details?.[0] || '').replace('Association DECONSEILLEE.', 'Moderate').replace('CONTRE-INDICATION', 'Severe').replace('Précaution d\'emploi', 'Mild').trim() as InteractionSeverity;
 
                     const interaction: Interaction = {
                         id: event.metadata.uuid,
                         drug1Id: drug1.id,
                         drug2Id: drug2.id,
-                        severity: reco,
+                        severity: recoSeverity,
                         description: Array.isArray(payload.description) ? payload.description.join(' ') : payload.description,
+                        reco: payload.reco,
+                        reco_details: payload.reco_details || [],
                     };
                     interactionsMap.set(interaction.id, interaction);
                 }
@@ -169,8 +171,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
           drug_name1: drug1.name,
           drug_name2: drug2.name,
           description: [data.description],
-          reco: data.severity,
-          reco_details: []
+          reco: data.reco,
+          reco_details: data.reco_details
       }
     };
     appendEvent(newEvent);

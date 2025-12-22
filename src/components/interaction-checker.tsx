@@ -6,6 +6,8 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/com
 import { useAppContext } from '@/context/app-context';
 import type { Interaction } from '@/lib/types';
 import { AlertTriangle, Shield, ShieldAlert, ShieldCheck, Info, Pill } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Separator } from '@/components/ui/separator';
 
 const SeverityIndicator = ({ severity }: { severity: Interaction['severity'] }) => {
     switch (severity) {
@@ -126,8 +128,17 @@ export function InteractionChecker() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
-                <p className="text-foreground">{foundInteraction.description}</p>
+              <CardContent className="space-y-4">
+                 <div>
+                    <h3 className="font-semibold text-foreground mb-2">Description</h3>
+                    <p className="text-muted-foreground">{foundInteraction.description}</p>
+                 </div>
+                 <Separator />
+                 <div>
+                    <h3 className="font-semibold text-foreground mb-2">Recommendation</h3>
+                    {foundInteraction.reco && <Badge variant="outline" className="mb-2">{foundInteraction.reco}</Badge>}
+                    <p className="text-muted-foreground">{foundInteraction.reco_details.join(' ')}</p>
+                 </div>
               </CardContent>
             </Card>
           ) : (

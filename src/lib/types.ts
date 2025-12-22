@@ -11,6 +11,8 @@ export type Interaction = {
   drug2Id: string;
   severity: InteractionSeverity;
   description: string;
+  reco: string;
+  reco_details: string[];
 };
 
 // Event Sourcing Types
