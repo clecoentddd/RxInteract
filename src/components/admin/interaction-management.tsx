@@ -13,7 +13,8 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Textarea } from '@/components/ui/textarea';
 import { useToast } from '@/hooks/use-toast';
-import type { Interaction } from '@/lib/types';
+import type { Interaction, InteractionFormValues } from '@/lib/types';
+import { interactionSchema } from '@/lib/types';
 import { PlusCircle, Edit, Trash2 } from 'lucide-react';
 import {
   AlertDialog,
@@ -26,18 +27,6 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
-import { Input } from '../ui/input';
-
-const interactionSchema = z.object({
-  drug1Id: z.string().min(1, 'Please select the first drug.'),
-  drug2Id: z.string().min(1, 'Please select the second drug.'),
-  description: z.string().min(10, 'Description must be at least 10 characters.'),
-  reco: z.string().min(1, 'Recommendation is required.'),
-  reco_details: z.string().min(1, 'Recommendation details are required.').transform(val => [val]),
-});
-
-
-type InteractionFormValues = z.infer<typeof interactionSchema>;
 
 export function InteractionManagement() {
     const { drugs, interactions, getDrugById, addInteraction, updateInteraction, deleteInteraction } = useAppContext();
@@ -46,6 +35,11 @@ export function InteractionManagement() {
     const [editingInteraction, setEditingInteraction] = useState<Interaction | null>(null);
 
     const sortedDrugs = useMemo(() => [...drugs].sort((a, b) => a.name.localeCompare(b.name)), [drugs]);
+    const sortedInteractions = useMemo(() => [...interactions].sort((a,b) => {
+        const drug1Name = getDrugById(a.drug1Id)?.name || '';
+        const drug2Name = getDrugById(b.drug1Id)?.name || '';
+        return drug1Name.localeCompare(drug2Name);
+    }), [interactions, getDrugById]);
 
     const form = useForm<InteractionFormValues>({
         resolver: zodResolver(interactionSchema.refine(data => data.drug1Id !== data.drug2Id, {
@@ -54,8 +48,12 @@ export function InteractionManagement() {
         }).refine(data => {
             if (editingInteraction) return true;
             
-            const drug1Name = getDrugById(data.drug1Id)?.name.toLowerCase();
-            const drug2Name = getDrugById(data.drug2Id)?.name.toLowerCase();
+            const drug1 = getDrugById(data.drug1Id);
+            const drug2 = getDrugById(data.drug2Id);
+            if (!drug1 || !drug2) return true; // Let other validators handle this
+
+            const drug1Name = drug1.name.toLowerCase();
+            const drug2Name = drug2.name.toLowerCase();
 
             const exists = interactions.some(i => {
                 const existingDrug1 = getDrugById(i.drug1Id)?.name.toLowerCase();
@@ -81,7 +79,7 @@ export function InteractionManagement() {
         if (isDialogOpen) {
             form.reset(editingInteraction ? {
                 ...editingInteraction,
-                reco_details: editingInteraction.reco_details.join(' '),
+                reco_details: editingInteraction.reco_details.join('\n'),
             } : { drug1Id: '', drug2Id: '', description: '', reco: '', reco_details: [] });
         }
     }, [isDialogOpen, editingInteraction, form]);
@@ -110,16 +108,16 @@ export function InteractionManagement() {
 
     return (
         <Card>
-            <CardHeader>
-                <CardTitle>Manage Interactions</CardTitle>
-                <CardDescription>Add, edit, or delete drug interactions.</CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-                <div className="flex justify-end">
-                    <Button onClick={() => handleOpenDialog(null)}>
-                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Interaction
-                    </Button>
+            <CardHeader className="flex flex-row items-center justify-between">
+                <div className="space-y-1.5">
+                    <CardTitle>Manage Interactions</CardTitle>
+                    <CardDescription>Add, edit, or delete drug interactions.</CardDescription>
                 </div>
+                 <Button onClick={() => handleOpenDialog(null)}>
+                    <PlusCircle className="mr-2 h-4 w-4" /> Add New Interaction
+                </Button>
+            </CardHeader>
+            <CardContent>
                 <div className="border rounded-md">
                     <Table>
                         <TableHeader>
@@ -131,7 +129,7 @@ export function InteractionManagement() {
                             </TableRow>
                         </TableHeader>
                         <TableBody>
-                            {interactions.length > 0 ? interactions.map((interaction) => (
+                            {sortedInteractions.length > 0 ? sortedInteractions.map((interaction) => (
                                 <TableRow key={interaction.id}>
                                     <TableCell>{getDrugById(interaction.drug1Id)?.name || 'N/A'}</TableCell>
                                     <TableCell>{getDrugById(interaction.drug2Id)?.name || 'N/A'}</TableCell>
@@ -183,7 +181,7 @@ export function InteractionManagement() {
                                 <FormField control={form.control} name="drug1Id" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Drug 1</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingInteraction}>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!editingInteraction}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="Select a drug" /></SelectTrigger></FormControl>
                                             <SelectContent>{sortedDrugs.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                                         </Select>
@@ -193,7 +191,7 @@ export function InteractionManagement() {
                                  <FormField control={form.control} name="drug2Id" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Drug 2</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value} disabled={!!editingInteraction}>
+                                        <Select onValueChange={field.onChange} defaultValue={field.value} disabled={!!editingInteraction}>
                                             <FormControl><SelectTrigger><SelectValue placeholder="Select a drug" /></SelectTrigger></FormControl>
                                             <SelectContent>{sortedDrugs.map(d => <SelectItem key={d.id} value={d.id}>{d.name}</SelectItem>)}</SelectContent>
                                         </Select>
@@ -201,10 +199,22 @@ export function InteractionManagement() {
                                     </FormItem>
                                 )}/>
                                 </div>
-                                 <FormField control={form.control} name="reco" render={({ field }) => (
+                                <FormField control={form.control} name="reco" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Recommendation</FormLabel>
-                                        <FormControl><Input placeholder="e.g., Association DECONSEILLEE" {...field} /></FormControl>
+                                        <FormControl>
+                                          <Select onValueChange={field.onChange} defaultValue={field.value}>
+                                              <SelectTrigger>
+                                                  <SelectValue placeholder="Select a recommendation level" />
+                                              </SelectTrigger>
+                                              <SelectContent>
+                                                  <SelectItem value="CONTRE-INDICATION">CONTRE-INDICATION</SelectItem>
+                                                  <SelectItem value="Association DECONSEILLEE">Association DECONSEILLEE</SelectItem>
+                                                  <SelectItem value="Précaution d'emploi">Précaution d'emploi</SelectItem>
+                                                  <SelectItem value="A prendre en compte">A prendre en compte</SelectItem>
+                                              </SelectContent>
+                                          </Select>
+                                        </FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
@@ -218,7 +228,7 @@ export function InteractionManagement() {
                                 <FormField control={form.control} name="reco_details" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Recommendation Details</FormLabel>
-                                        <FormControl><Textarea placeholder="Provide details for the recommendation..." {...field} rows={3} /></FormControl>
+                                        <FormControl><Textarea placeholder="Provide details for the recommendation, one per line..." {...field} rows={3} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
