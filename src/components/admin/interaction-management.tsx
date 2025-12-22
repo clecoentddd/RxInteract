@@ -28,12 +28,9 @@ import {
 } from "@/components/ui/alert-dialog"
 import { Input } from '../ui/input';
 
-const severities = ['Mild', 'Moderate', 'Severe'] as const;
-
 const interactionSchema = z.object({
   drug1Id: z.string().min(1, 'Please select the first drug.'),
   drug2Id: z.string().min(1, 'Please select the second drug.'),
-  severity: z.enum(severities),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
   reco: z.string().min(1, 'Recommendation is required.'),
   reco_details: z.string().min(1, 'Recommendation details are required.').transform(val => [val]),
@@ -129,7 +126,7 @@ export function InteractionManagement() {
                             <TableRow>
                                 <TableHead>Drug 1</TableHead>
                                 <TableHead>Drug 2</TableHead>
-                                <TableHead>Severity</TableHead>
+                                <TableHead>Recommendation</TableHead>
                                 <TableHead className="text-right">Actions</TableHead>
                             </TableRow>
                         </TableHeader>
@@ -138,13 +135,7 @@ export function InteractionManagement() {
                                 <TableRow key={interaction.id}>
                                     <TableCell>{getDrugById(interaction.drug1Id)?.name || 'N/A'}</TableCell>
                                     <TableCell>{getDrugById(interaction.drug2Id)?.name || 'N/A'}</TableCell>
-                                    <TableCell>
-                                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                                            interaction.severity === 'Severe' ? 'bg-destructive/20 text-destructive' :
-                                            interaction.severity === 'Moderate' ? 'bg-yellow-500/20 text-yellow-600' :
-                                            'bg-green-500/20 text-green-600'
-                                        }`}>{interaction.severity}</span>
-                                    </TableCell>
+                                     <TableCell>{interaction.reco}</TableCell>
                                     <TableCell className="text-right space-x-1">
                                         <Button variant="ghost" size="icon" onClick={() => handleOpenDialog(interaction)}>
                                             <Edit className="h-4 w-4" />
@@ -210,16 +201,6 @@ export function InteractionManagement() {
                                     </FormItem>
                                 )}/>
                                 </div>
-                                <FormField control={form.control} name="severity" render={({ field }) => (
-                                    <FormItem>
-                                        <FormLabel>Severity</FormLabel>
-                                        <Select onValueChange={field.onChange} value={field.value}>
-                                            <FormControl><SelectTrigger><SelectValue placeholder="Select severity" /></SelectTrigger></FormControl>
-                                            <SelectContent>{severities.map(s => <SelectItem key={s} value={s}>{s}</SelectItem>)}</SelectContent>
-                                        </Select>
-                                        <FormMessage />
-                                    </FormItem>
-                                )}/>
                                  <FormField control={form.control} name="reco" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Recommendation</FormLabel>
