@@ -19,7 +19,7 @@ function applyEvents(events: AppEvent[]): { drugs: Drug[], interactions: Interac
     for (const event of sortedEvents) {
         switch (event.metadata.event_type) {
             case 'DrugAdded': {
-                const payload = event.payload as { drug: string };
+                const payload = event.payload as { drug: string, uuid?: string };
                 const drug: Drug = { id: event.metadata.uuid, name: payload.drug };
                 drugsMap.set(drug.id, drug);
                 break;
@@ -31,19 +31,33 @@ function applyEvents(events: AppEvent[]): { drugs: Drug[], interactions: Interac
             }
             case 'InteractionAdded': {
                 const payload = event.payload as any;
-                // Find drug IDs from names
-                const drugs = Array.from(drugsMap.values());
-                const drug1 = drugs.find(d => d.name === payload.drug_name1);
-                const drug2 = drugs.find(d => d.name === payload.drug_name2);
+                
+                // Legacy support for when drug IDs were not directly in the payload
+                let drug1Id = payload.drug1Id;
+                let drug2Id = payload.drug2Id;
 
-                if (drug1 && drug2) {
-                    const recoSeverity = (payload.reco_details?.[0] || '').replace('Association DECONSEILLEE.', 'Moderate').replace('CONTRE-INDICATION', 'Severe').replace('Précaution d\'emploi', 'Mild').trim() as InteractionSeverity;
+                if (!drug1Id || !drug2Id) {
+                    const drugs = Array.from(drugsMap.values());
+                    const drug1 = drugs.find(d => d.name === payload.drug_name1);
+                    const drug2 = drugs.find(d => d.name === payload.drug_name2);
+                    if (drug1) drug1Id = drug1.id;
+                    if (drug2) drug2Id = drug2.id;
+                }
+
+                if (drug1Id && drug2Id) {
+                    let severity: InteractionSeverity = payload.severity || '';
+                    if (!severity) {
+                         // Derive severity for older events
+                        if (payload.reco?.includes('CONTRE-INDICATION')) severity = 'Severe';
+                        else if (payload.reco?.includes('DECONSEILLEE')) severity = 'Moderate';
+                        else if (payload.reco?.includes('Précaution')) severity = 'Mild';
+                    }
 
                     const interaction: Interaction = {
                         id: event.metadata.uuid,
-                        drug1Id: drug1.id,
-                        drug2Id: drug2.id,
-                        severity: recoSeverity,
+                        drug1Id: drug1Id,
+                        drug2Id: drug2Id,
+                        severity: severity,
                         description: Array.isArray(payload.description) ? payload.description.join(' ') : payload.description,
                         reco: payload.reco,
                         reco_details: payload.reco_details || [],
@@ -141,6 +155,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         payload: { drug: name.toUpperCase(), drug_details: [] }
     };
     appendEvent(newEvent);
+    toast({ title: "Success", description: `Drug "${name}" added.`})
   };
 
   const deleteDrug = (id: string) => {
@@ -156,10 +171,6 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const addInteraction = (data: Omit<Interaction, 'id'>) => {
-    const drug1 = getDrugById(data.drug1Id);
-    const drug2 = getDrugById(data.drug2Id);
-    if (!drug1 || !drug2) return;
-
     const newEvent: AppEvent = {
       metadata: {
         event_type: 'InteractionAdded',
@@ -167,12 +178,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
         uuid: `int_${Date.now()}`,
       },
       payload: {
-          drug_uuid: drug1.id, // Using drug1 id as reference, as per original data
-          drug_name1: drug1.name,
-          drug_name2: drug2.name,
-          description: [data.description],
-          reco: data.reco,
-          reco_details: data.reco_details
+          ...data
       }
     };
     appendEvent(newEvent);

@@ -28,12 +28,13 @@ type DrugAddedPayload = {
 };
 
 type InteractionAddedPayload = {
-    drug_uuid: string; // Note: This seems to be the UUID of one of the drugs, not the interaction itself.
+    drug_uuid: string; 
     drug_name1: string;
     drug_name2: string;
     description: string[];
     reco: string;
     reco_details: string[];
+    severity: InteractionSeverity;
 };
 
 type DrugDeletedPayload = {
@@ -44,7 +45,7 @@ type InteractionDeletedPayload = {
     interactionId: string;
 };
 
-type InteractionUpdatedPayload = Omit<Interaction, 'id'>;
+type InteractionUpdatedPayload = Omit<Interaction, 'id'> & {id: string};
 
 
 export type AppEvent = {

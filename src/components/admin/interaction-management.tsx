@@ -26,6 +26,7 @@ import {
   AlertDialogTitle,
   AlertDialogTrigger,
 } from "@/components/ui/alert-dialog"
+import { Input } from '../ui/input';
 
 const severities = ['Mild', 'Moderate', 'Severe'] as const;
 
@@ -34,6 +35,8 @@ const interactionSchema = z.object({
   drug2Id: z.string().min(1, 'Please select the second drug.'),
   severity: z.enum(severities),
   description: z.string().min(10, 'Description must be at least 10 characters.'),
+  reco: z.string().min(1, 'Recommendation is required.'),
+  reco_details: z.string().min(1, 'Recommendation details are required.').transform(val => [val]),
 });
 
 
@@ -52,13 +55,17 @@ export function InteractionManagement() {
             message: "The two drugs must be different.",
             path: ["drug2Id"],
         }).refine(data => {
-            // This validation is only for new interactions
             if (editingInteraction) return true;
             
-            const exists = interactions.some(i => 
-                (i.drug1Id === data.drug1Id && i.drug2Id === data.drug2Id) ||
-                (i.drug1Id === data.drug2Id && i.drug2Id === data.drug1Id)
-            );
+            const drug1Name = getDrugById(data.drug1Id)?.name.toLowerCase();
+            const drug2Name = getDrugById(data.drug2Id)?.name.toLowerCase();
+
+            const exists = interactions.some(i => {
+                const existingDrug1 = getDrugById(i.drug1Id)?.name.toLowerCase();
+                const existingDrug2 = getDrugById(i.drug2Id)?.name.toLowerCase();
+                return (existingDrug1 === drug1Name && existingDrug2 === drug2Name) ||
+                       (existingDrug1 === drug2Name && existingDrug2 === drug1Name)
+            });
             return !exists;
         }, {
             message: "An interaction between these two drugs already exists.",
@@ -68,17 +75,17 @@ export function InteractionManagement() {
             drug1Id: '',
             drug2Id: '',
             description: '',
+            reco: '',
+            reco_details: [],
         }
     });
 
     useEffect(() => {
         if (isDialogOpen) {
             form.reset(editingInteraction ? {
-                drug1Id: editingInteraction.drug1Id,
-                drug2Id: editingInteraction.drug2Id,
-                severity: editingInteraction.severity,
-                description: editingInteraction.description,
-            } : { drug1Id: '', drug2Id: '', description: '' });
+                ...editingInteraction,
+                reco_details: editingInteraction.reco_details.join(' '),
+            } : { drug1Id: '', drug2Id: '', description: '', reco: '', reco_details: [] });
         }
     }, [isDialogOpen, editingInteraction, form]);
 
@@ -106,16 +113,16 @@ export function InteractionManagement() {
 
     return (
         <Card>
-            <CardHeader className="flex flex-row items-center justify-between">
-                <div>
-                    <CardTitle>Manage Interactions</CardTitle>
-                    <CardDescription>Add, edit, or delete drug interactions.</CardDescription>
-                </div>
-                <Button onClick={() => handleOpenDialog(null)}>
-                    <PlusCircle className="mr-2 h-4 w-4" /> Add Interaction
-                </Button>
+            <CardHeader>
+                <CardTitle>Manage Interactions</CardTitle>
+                <CardDescription>Add, edit, or delete drug interactions.</CardDescription>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-6">
+                <div className="flex justify-end">
+                    <Button onClick={() => handleOpenDialog(null)}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Add New Interaction
+                    </Button>
+                </div>
                 <div className="border rounded-md">
                     <Table>
                         <TableHeader>
@@ -213,10 +220,24 @@ export function InteractionManagement() {
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
+                                 <FormField control={form.control} name="reco" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Recommendation</FormLabel>
+                                        <FormControl><Input placeholder="e.g., Association DECONSEILLEE" {...field} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
                                 <FormField control={form.control} name="description" render={({ field }) => (
                                     <FormItem>
                                         <FormLabel>Description</FormLabel>
-                                        <FormControl><Textarea placeholder="Describe the interaction..." {...field} rows={5} /></FormControl>
+                                        <FormControl><Textarea placeholder="Describe the interaction..." {...field} rows={3} /></FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}/>
+                                <FormField control={form.control} name="reco_details" render={({ field }) => (
+                                    <FormItem>
+                                        <FormLabel>Recommendation Details</FormLabel>
+                                        <FormControl><Textarea placeholder="Provide details for the recommendation..." {...field} rows={3} /></FormControl>
                                         <FormMessage />
                                     </FormItem>
                                 )}/>
