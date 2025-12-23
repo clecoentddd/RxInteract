@@ -8,7 +8,6 @@ import type { Interaction } from '@/lib/types';
 import { AlertTriangle, Shield, ShieldAlert, Info, Pill } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { DrugCompositionDialog } from './drug-composition-dialog';
 
 const SeverityIndicator = ({ severity }: { severity: Interaction['severity'] }) => {
     switch (severity) {
@@ -72,10 +71,6 @@ export function InteractionChecker() {
     setFoundInteraction(null);
   }
 
-  const selectedDrug1 = drug1Id ? getDrugById(drug1Id) : null;
-  const selectedDrug2 = drug2Id ? getDrugById(drug2Id) : null;
-
-
   return (
     <div className="space-y-8">
       <Card className="shadow-lg animate-in fade-in-50 duration-500">
@@ -100,7 +95,6 @@ export function InteractionChecker() {
                   ))}
                 </SelectContent>
               </Select>
-              {selectedDrug1 && <DrugCompositionDialog drug={selectedDrug1} />}
             </div>
             <div className="space-y-2">
               <Select onValueChange={setDrug2Id} value={drug2Id || ''} disabled={!drug1Id}>
@@ -115,7 +109,6 @@ export function InteractionChecker() {
                   )) : <p className="p-4 text-sm text-muted-foreground">No interactions found for the first drug.</p>}
                 </SelectContent>
               </Select>
-              {selectedDrug2 && <DrugCompositionDialog drug={selectedDrug2} />}
             </div>
           </div>
         </CardContent>
