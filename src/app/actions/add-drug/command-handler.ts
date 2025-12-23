@@ -14,6 +14,6 @@ export function handleAddDrugCommand(state: AppState, command: AddDrugCommand) {
   }
 
   // Append Event
-  const event = createDrugAddedEvent(command.name);
+  const event = createDrugAddedEvent(command);
   return event;
 }

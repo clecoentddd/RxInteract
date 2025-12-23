@@ -38,7 +38,7 @@ export function DrugManagement() {
 
   const addForm = useForm<AddDrugCommand>({
     resolver: zodResolver(AddDrugCommandSchema),
-    defaultValues: { name: '' },
+    defaultValues: { name: '', details: '' },
   });
 
   const editForm = useForm<UpdateDrugCommand>({
@@ -157,6 +157,19 @@ export function DrugManagement() {
                     <FormLabel>Drug Name</FormLabel>
                     <FormControl>
                       <Input placeholder="e.g., Paracetamol" {...field} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={addForm.control}
+                name="details"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Description / Details</FormLabel>
+                    <FormControl>
+                      <Textarea placeholder="Enter drug details, one per line..." {...field} rows={4} />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
