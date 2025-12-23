@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
-import type { Drug, Interaction, AppEvent, AppState } from '@/lib/types';
+import type { Drug, Interaction, AppEvent, AppState, CompositionResult } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { createInitialState, applyEvent } from '@/app/data/events';
 import initialEventData from '../../DB/events.json';
@@ -10,27 +10,24 @@ import initialEventData from '../../DB/events.json';
 // Slices
 import type { AddDrugCommand } from '@/app/actions/add-drug/command';
 import { handleAddDrugCommand } from '@/app/actions/add-drug/command-handler';
-import { drugAddedReducer } from '@/app/actions/add-drug/reducer';
 
 import type { UpdateDrugCommand } from '@/app/actions/update-drug/command';
 import { handleUpdateDrugCommand } from '@/app/actions/update-drug/command-handler';
-import { drugUpdatedReducer } from '@/app/actions/update-drug/reducer';
 
 import type { DeleteDrugCommand } from '@/app/actions/delete-drug/command';
 import { handleDeleteDrugCommand } from '@/app/actions/delete-drug/command-handler';
-import { drugDeletedReducer } from '@/app/actions/delete-drug/reducer';
 
 import type { AddInteractionCommand } from '@/app/actions/add-interaction/command';
 import { handleAddInteractionCommand } from '@/app/actions/add-interaction/command-handler';
-import { interactionAddedReducer } from '@/app/actions/add-interaction/reducer';
 
 import type { UpdateInteractionCommand } from '@/app/actions/update-interaction/command';
 import { handleUpdateInteractionCommand } from '@/app/actions/update-interaction/command-handler';
-import { interactionUpdatedReducer } from '@/app/actions/update-interaction/reducer';
 
 import type { DeleteInteractionCommand } from '@/app/actions/delete-interaction/command';
 import { handleDeleteInteractionCommand } from '@/app/actions/delete-interaction/command-handler';
-import { interactionDeletedReducer } from '@/app/actions/delete-interaction/reducer';
+
+import type { CheckCompositionCommand } from '@/app/actions/check-composition/command';
+import { handleCheckCompositionCommand } from '@/app/actions/check-composition/command-handler';
 
 // Projections
 import { useListeDesMedicaments } from '@/app/projections/liste-des-medicaments/projection';
@@ -45,25 +42,18 @@ interface AppContextType {
   logout: () => void;
   drugs: Drug[];
   interactions: Interaction[];
+  compositionResults: Map<string, CompositionResult>;
   addDrug: (command: AddDrugCommand) => void;
   updateDrug: (command: UpdateDrugCommand) => void;
   deleteDrug: (command: DeleteDrugCommand) => void;
   addInteraction: (command: AddInteractionCommand) => void;
   updateInteraction: (command: UpdateInteractionCommand) => void;
   deleteInteraction: (command: DeleteInteractionCommand) => void;
+  checkComposition: (command: CheckCompositionCommand) => Promise<void>;
   getDrugById: (id: string) => Drug | undefined;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
-
-const eventReducers: Record<string, (state: AppState, event: AppEvent) => AppState> = {
-  'DrugAdded': drugAddedReducer,
-  'DrugUpdated': drugUpdatedReducer,
-  'DrugDeleted': drugDeletedReducer,
-  'InteractionAdded': interactionAddedReducer,
-  'InteractionUpdated': interactionUpdatedReducer,
-  'InteractionDeleted': interactionDeletedReducer,
-};
 
 function applyEvents(events: AppEvent[]): AppState {
     return events.reduce(applyEvent, createInitialState());
@@ -80,6 +70,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Use projection slices to get the read models
   const drugs = useListeDesMedicaments(appState);
   const interactions = useListeDesInteractions(appState);
+  const compositionResults = appState.compositionResults;
 
 
   // --- Authentication Slice ---
@@ -89,9 +80,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   const getDrugById = useCallback((id: string) => appState.drugs.get(id), [appState.drugs]);
 
   // --- Command Dispatcher ---
-  const dispatchCommand = (handler: Function, command: any, successMessage: string) => {
+  const dispatchCommand = async (handler: Function, command: any, successMessage: string) => {
     try {
-      const newEvent = handler(appState, command);
+      const newEvent = await handler(appState, command);
       setEvents(prev => [...prev, newEvent]);
       toast({ title: "Success", description: successMessage });
     } catch (error: any) {
@@ -128,18 +119,25 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     dispatchCommand(handleDeleteInteractionCommand, command, 'Interaction deleted.');
   };
 
+  const checkComposition = async (command: CheckCompositionCommand) => {
+    await dispatchCommand(handleCheckCompositionCommand, command, `Composition check for "${command.drugName}" complete.`);
+  };
+
+
   const value = {
     isAuthenticated,
     login,
     logout,
     drugs,
     interactions,
+    compositionResults,
     addDrug,
     updateDrug,
     deleteDrug,
     addInteraction,
     updateInteraction,
     deleteInteraction,
+    checkComposition,
     getDrugById,
   };
 

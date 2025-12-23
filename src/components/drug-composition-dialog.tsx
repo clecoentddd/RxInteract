@@ -1,37 +1,25 @@
 "use client";
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Drug } from '@/lib/types';
+import { useAppContext } from '@/context/app-context';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Beaker, Loader2 } from 'lucide-react';
 import { Alert, AlertDescription, AlertTitle } from './ui/alert';
 
-type CompositionResult = {
-    count: number;
-    error?: string;
-}
-
 export function DrugCompositionDialog({ drug }: { drug: Drug }) {
+  const { checkComposition, compositionResults } = useAppContext();
   const [isOpen, setIsOpen] = useState(false);
-  const [result, setResult] = useState<CompositionResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  
+  const result = compositionResults.get(drug.id);
 
   const handleCheckComposition = async () => {
     setIsOpen(true);
-    setIsLoading(true);
-    setResult(null);
-
-    try {
-      const response = await fetch(`https://medicaments-api.giygas.dev/medicament/${drug.name.toLowerCase()}`);
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
-      setResult({ count: data.length });
-    } catch (error: any) {
-      setResult({ count: 0, error: error.message });
-    } finally {
+    if (!result || (Date.now() / 1000) - result.timestamp > 300) { // Don't re-fetch if we have a recent result
+      setIsLoading(true);
+      await checkComposition({ drugId: drug.id, drugName: drug.name });
       setIsLoading(false);
     }
   };
@@ -52,13 +40,12 @@ export function DrugCompositionDialog({ drug }: { drug: Drug }) {
             </DialogDescription>
           </DialogHeader>
           <div className="py-4">
-            {isLoading && (
+            {isLoading ? (
                 <div className="flex items-center justify-center space-x-2">
                     <Loader2 className="h-6 w-6 animate-spin" />
                     <p>Loading...</p>
                 </div>
-            )}
-            {result && !isLoading && (
+            ) : result ? (
                 <div>
                     {result.error ? (
                          <Alert variant="destructive">
@@ -72,6 +59,8 @@ export function DrugCompositionDialog({ drug }: { drug: Drug }) {
                         </Alert>
                     )}
                 </div>
+            ) : (
+                <div className="text-center text-muted-foreground">Click "Check Composition" to start.</div>
             )}
           </div>
           <DialogFooter>
