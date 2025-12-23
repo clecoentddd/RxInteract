@@ -5,11 +5,10 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppContext } from '@/context/app-context';
 import type { Interaction } from '@/lib/types';
-import { AlertTriangle, ShieldAlert, Info, Pill, Beaker } from 'lucide-react';
+import { AlertTriangle, Shield, ShieldAlert, Info, Pill } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { DrugCompositionDialog } from './drug-composition-dialog';
-import { Button } from './ui/button';
 
 const SeverityIndicator = ({ severity }: { severity: Interaction['severity'] }) => {
     switch (severity) {
