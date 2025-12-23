@@ -1,7 +1,17 @@
 // src/app/api/check-composition/route.ts
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic' // defaults to auto
+export const dynamic = 'force-dynamic';
+
+// Increase the body size limit for this specific route
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '4mb', // Set a higher limit, e.g., 4MB
+    },
+  },
+};
+
 export async function POST(request: Request) {
   try {
     const { drugName } = await request.json();
@@ -15,7 +25,6 @@ export async function POST(request: Request) {
     if (!apiResponse.ok) {
         const errorText = await apiResponse.text();
         console.error(`External API Error: ${errorText}`);
-        // Try to parse the error for a more specific message
         try {
             const errorJson = JSON.parse(errorText);
             if (errorJson.message === "Not Found") {
