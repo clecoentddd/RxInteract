@@ -22,6 +22,7 @@ export function CompositionChecker() {
     if (!selectedDrug) return;
     
     setIsLoading(true);
+    // This now calls the refactored command handler which performs a local search
     await checkComposition({ drugId: selectedDrug.id, drugName: selectedDrug.name });
     setIsLoading(false);
   };
@@ -29,8 +30,8 @@ export function CompositionChecker() {
   return (
     <Card className="shadow-lg animate-in fade-in-50 duration-500">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Drug Composition Checker</CardTitle>
-        <CardDescription>Select a drug to check its active ingredients from an external API.</CardDescription>
+        <CardTitle className="text-2xl font-headline">Drug Component Search</CardTitle>
+        <CardDescription>Select a drug to find how many other entries reference it as a component.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -52,7 +53,7 @@ export function CompositionChecker() {
               ) : (
                 <Beaker className="mr-2 h-4 w-4" />
               )}
-              Check Composition
+              Search Occurrences
             </Button>
         </div>
         
@@ -61,13 +62,13 @@ export function CompositionChecker() {
             <Separator className="my-4" />
             {result.error ? (
               <Alert variant="destructive">
-                <AlertTitle>Error Checking Composition</AlertTitle>
+                <AlertTitle>Error During Search</AlertTitle>
                 <AlertDescription>{result.error}</AlertDescription>
               </Alert>
             ) : (
               <Alert>
-                <AlertTitle>Composition Result for {selectedDrug?.name}</AlertTitle>
-                <AlertDescription>Found {result.count} active ingredients in the external database.</AlertDescription>
+                <AlertTitle>Search Result for {selectedDrug?.name}</AlertTitle>
+                <AlertDescription>Found {result.count} occurrences as a component in other entries.</AlertDescription>
               </Alert>
             )}
           </div>
