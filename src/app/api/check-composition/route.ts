@@ -19,7 +19,7 @@ export async function POST(request: Request) {
         try {
             const errorJson = JSON.parse(errorText);
             if (errorJson.message === "Not Found") {
-                 return NextResponse.json({ count: 0 });
+                 return NextResponse.json({ count: 0 }); // Return count 0 if not found
             }
              return NextResponse.json({ error: errorJson.message || `External API failed with status: ${apiResponse.status}` }, { status: apiResponse.status });
         } catch (e) {
