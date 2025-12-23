@@ -30,7 +30,7 @@ export function CompositionChecker() {
     <Card className="shadow-lg animate-in fade-in-50 duration-500">
       <CardHeader>
         <CardTitle className="text-2xl font-headline">Drug Composition Checker</CardTitle>
-        <CardDescription>Select a drug to check its composition from an external API.</CardDescription>
+        <CardDescription>Select a drug to check its active ingredients from an external API.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -67,7 +67,7 @@ export function CompositionChecker() {
             ) : (
               <Alert>
                 <AlertTitle>Composition Result for {selectedDrug?.name}</AlertTitle>
-                <AlertDescription>Found {result.count} related medicaments in the external database.</AlertDescription>
+                <AlertDescription>Found {result.count} active ingredients in the external database.</AlertDescription>
               </Alert>
             )}
           </div>
