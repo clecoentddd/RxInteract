@@ -29,8 +29,8 @@ export function CompositionChecker() {
   return (
     <Card className="shadow-lg animate-in fade-in-50 duration-500">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Drug Composition Checker</CardTitle>
-        <CardDescription>Select a drug to find how many active ingredients it has, based on the initial data.</CardDescription>
+        <CardTitle className="text-2xl font-headline">Related Substances Checker</CardTitle>
+        <CardDescription>Select a drug to find how many related substances or notes it has in the database.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -52,7 +52,7 @@ export function CompositionChecker() {
               ) : (
                 <Beaker className="mr-2 h-4 w-4" />
               )}
-              Check Active Ingredients
+              Check Related Substances
             </Button>
         </div>
         
@@ -66,8 +66,8 @@ export function CompositionChecker() {
               </Alert>
             ) : (
               <Alert>
-                <AlertTitle>Composition Result for {selectedDrug?.name}</AlertTitle>
-                <AlertDescription>Found {result.count} active ingredients in the local database.</AlertDescription>
+                <AlertTitle>Check Result for {selectedDrug?.name}</AlertTitle>
+                <AlertDescription>Found {result.count} related substances or notes in the local database.</AlertDescription>
               </Alert>
             )}
           </div>
