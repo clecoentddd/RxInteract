@@ -5,9 +5,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { useAppContext } from '@/context/app-context';
 import type { Interaction } from '@/lib/types';
-import { AlertTriangle, Shield, ShieldAlert, Info, Pill } from 'lucide-react';
+import { AlertTriangle, ShieldAlert, Info, Pill, Beaker } from 'lucide-react';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
+import { DrugCompositionDialog } from './drug-composition-dialog';
+import { Button } from './ui/button';
 
 const SeverityIndicator = ({ severity }: { severity: Interaction['severity'] }) => {
     switch (severity) {
@@ -16,19 +18,21 @@ const SeverityIndicator = ({ severity }: { severity: Interaction['severity'] }) 
         case 'Moderate':
             return <AlertTriangle className="h-10 w-10 text-yellow-500" />;
         case 'Mild':
-            return <ShieldCheck className="h-10 w-10 text-green-500" />;
+            return <Info className="h-10 w-10 text-green-500" />;
         default:
             return <Shield className="h-10 w-10 text-muted-foreground" />;
     }
 };
 
 export function InteractionChecker() {
-  const { drugs, interactions } = useAppContext();
+  const { drugs, getDrugById } = useAppContext();
   const [drug1Id, setDrug1Id] = useState<string | null>(null);
   const [drug2Id, setDrug2Id] = useState<string | null>(null);
   const [foundInteraction, setFoundInteraction] = useState<Interaction | null>(null);
 
-  const sortedDrugs = useMemo(() => [...drugs], [drugs]);
+  const { interactions } = useAppContext();
+
+  const sortedDrugs = useMemo(() => [...drugs].sort((a, b) => a.name.localeCompare(b.name)), [drugs]);
 
   const interactingDrugs = useMemo(() => {
     if (!drug1Id) return [];
@@ -69,6 +73,10 @@ export function InteractionChecker() {
     setFoundInteraction(null);
   }
 
+  const selectedDrug1 = drug1Id ? getDrugById(drug1Id) : null;
+  const selectedDrug2 = drug2Id ? getDrugById(drug2Id) : null;
+
+
   return (
     <div className="space-y-8">
       <Card className="shadow-lg animate-in fade-in-50 duration-500">
@@ -79,31 +87,37 @@ export function InteractionChecker() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
-            <Select onValueChange={handleDrug1Change} value={drug1Id || ''}>
-              <SelectTrigger id="drug1">
-                <SelectValue placeholder="Select first drug" />
-              </SelectTrigger>
-              <SelectContent>
-                {sortedDrugs.map((drug) => (
-                  <SelectItem key={drug.id} value={drug.id}>
-                    {drug.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-            <Select onValueChange={setDrug2Id} value={drug2Id || ''} disabled={!drug1Id}>
-              <SelectTrigger id="drug2">
-                <SelectValue placeholder="Select second drug" />
-              </SelectTrigger>
-              <SelectContent>
-                {interactingDrugs.length > 0 ? interactingDrugs.map((drug) => (
-                  <SelectItem key={drug.id} value={drug.id}>
-                    {drug.name}
-                  </SelectItem>
-                )) : <p className="p-4 text-sm text-muted-foreground">No interactions found for the first drug.</p>}
-              </SelectContent>
-            </Select>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
+            <div className="space-y-2">
+              <Select onValueChange={handleDrug1Change} value={drug1Id || ''}>
+                <SelectTrigger id="drug1">
+                  <SelectValue placeholder="Select first drug" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sortedDrugs.map((drug) => (
+                    <SelectItem key={drug.id} value={drug.id}>
+                      {drug.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedDrug1 && <DrugCompositionDialog drug={selectedDrug1} />}
+            </div>
+            <div className="space-y-2">
+              <Select onValueChange={setDrug2Id} value={drug2Id || ''} disabled={!drug1Id}>
+                <SelectTrigger id="drug2">
+                  <SelectValue placeholder="Select second drug" />
+                </SelectTrigger>
+                <SelectContent>
+                  {interactingDrugs.length > 0 ? interactingDrugs.map((drug) => (
+                    <SelectItem key={drug.id} value={drug.id}>
+                      {drug.name}
+                    </SelectItem>
+                  )) : <p className="p-4 text-sm text-muted-foreground">No interactions found for the first drug.</p>}
+                </SelectContent>
+              </Select>
+              {selectedDrug2 && <DrugCompositionDialog drug={selectedDrug2} />}
+            </div>
           </div>
         </CardContent>
       </Card>
