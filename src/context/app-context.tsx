@@ -126,9 +126,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const checkComposition = async (command: CheckCompositionCommand) => {
-    if (appState.compositionResults.has(command.drugId)) {
-        return; // Already checked, no need to dispatch
-    }
+    // Note: No client-side check. We always dispatch to let the server handle it.
+    // This simplifies the client and aligns with the event-sourced nature.
     await dispatchCommand(handleCheckCompositionCommand, command, `Composition check for "${command.drugName}" complete.`);
   };
 
