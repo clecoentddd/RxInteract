@@ -16,6 +16,7 @@ export async function fetchDrugComposition(drugName: string): Promise<Compositio
         throw new Error(`External API failed with status: ${response.status}`);
       }
       const data = await response.json();
+      // Return only the count (length of the array) to avoid large response bodies.
       return { count: data.length };
     } catch (error: any) {
       console.error("Failed to fetch drug composition:", error);
