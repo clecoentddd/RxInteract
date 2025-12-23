@@ -82,9 +82,15 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // --- Command Dispatcher ---
   const dispatchCommand = async (handler: Function, command: any, successMessage: string) => {
     try {
-      const newEvent = await handler(appState, command);
-      setEvents(prev => [...prev, newEvent]);
-      toast({ title: "Success", description: successMessage });
+      const newEvent = await handler(command);
+
+      if (newEvent) {
+        setEvents(prev => [...prev, newEvent]);
+        
+        if (newEvent.metadata.event_type !== 'CompositionChecked') {
+            toast({ title: "Success", description: successMessage });
+        }
+      }
     } catch (error: any) {
       toast({
         variant: "destructive",
@@ -120,6 +126,9 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const checkComposition = async (command: CheckCompositionCommand) => {
+    if (appState.compositionResults.has(command.drugId)) {
+        return; // Already checked, no need to dispatch
+    }
     await dispatchCommand(handleCheckCompositionCommand, command, `Composition check for "${command.drugName}" complete.`);
   };
 

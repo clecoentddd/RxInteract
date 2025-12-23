@@ -22,7 +22,6 @@ export function CompositionChecker() {
     if (!selectedDrug) return;
     
     setIsLoading(true);
-    // This now calls the refactored command handler which performs a local search
     await checkComposition({ drugId: selectedDrug.id, drugName: selectedDrug.name });
     setIsLoading(false);
   };
@@ -30,8 +29,8 @@ export function CompositionChecker() {
   return (
     <Card className="shadow-lg animate-in fade-in-50 duration-500">
       <CardHeader>
-        <CardTitle className="text-2xl font-headline">Drug Component Search</CardTitle>
-        <CardDescription>Select a drug to find how many other entries reference it as a component.</CardDescription>
+        <CardTitle className="text-2xl font-headline">Drug Composition Checker</CardTitle>
+        <CardDescription>Select a drug to find how many active ingredients it has, based on the initial data.</CardDescription>
       </CardHeader>
       <CardContent>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-start">
@@ -53,7 +52,7 @@ export function CompositionChecker() {
               ) : (
                 <Beaker className="mr-2 h-4 w-4" />
               )}
-              Search Occurrences
+              Check Active Ingredients
             </Button>
         </div>
         
@@ -62,13 +61,13 @@ export function CompositionChecker() {
             <Separator className="my-4" />
             {result.error ? (
               <Alert variant="destructive">
-                <AlertTitle>Error During Search</AlertTitle>
+                <AlertTitle>Error During Check</AlertTitle>
                 <AlertDescription>{result.error}</AlertDescription>
               </Alert>
             ) : (
               <Alert>
-                <AlertTitle>Search Result for {selectedDrug?.name}</AlertTitle>
-                <AlertDescription>Found {result.count} occurrences as a component in other entries.</AlertDescription>
+                <AlertTitle>Composition Result for {selectedDrug?.name}</AlertTitle>
+                <AlertDescription>Found {result.count} active ingredients in the local database.</AlertDescription>
               </Alert>
             )}
           </div>

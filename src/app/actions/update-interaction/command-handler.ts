@@ -1,9 +1,21 @@
 // src/app/actions/update-interaction/command-handler.ts
-import type { AppState } from '@/lib/types';
+"use server";
+import type { AppState, AppEvent } from '@/lib/types';
 import type { UpdateInteractionCommand } from './command';
 import { createInteractionUpdatedEvent } from './event';
+import { createInitialState, applyEvent } from '@/app/data/events';
+import fs from 'fs';
+import path from 'path';
 
-export function handleUpdateInteractionCommand(state: AppState, command: UpdateInteractionCommand) {
+function getCurrentState(): AppState {
+    const filePath = path.join(process.cwd(), 'DB', 'events.json');
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const initialEventData = JSON.parse(fileContent);
+    return (initialEventData as AppEvent[]).reduce(applyEvent, createInitialState());
+}
+
+export async function handleUpdateInteractionCommand(command: UpdateInteractionCommand) {
+  const state = getCurrentState();
   const existingInteraction = state.interactions.get(command.id);
 
   if (!existingInteraction) {

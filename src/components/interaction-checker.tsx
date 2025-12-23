@@ -54,7 +54,7 @@ export function InteractionChecker() {
         setFoundInteraction(null);
         return;
       }
-      const interaction = interactions.find(
+      const interaction = [...interactions.values()].find(
         (i) =>
           (i.drug1Id === drug1Id && i.drug2Id === drug2Id) ||
           (i.drug1Id === drug2Id && i.drug2Id === drug1Id)
@@ -129,7 +129,7 @@ export function InteractionChecker() {
                   <div>
                     <CardTitle className="text-xl">{foundInteraction.severity} Interaction</CardTitle>
                     <CardDescription>
-                      Interaction between {drugs.find(d => d.id === drug1Id)?.name} and {drugs.find(d => d.id === drug2Id)?.name}
+                      Interaction between {getDrugById(drug1Id)?.name} and {getDrugById(drug2Id)?.name}
                     </CardDescription>
                   </div>
                 </div>

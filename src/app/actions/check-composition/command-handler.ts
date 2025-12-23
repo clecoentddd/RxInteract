@@ -1,41 +1,44 @@
 // src/app/actions/check-composition/command-handler.ts
 "use server";
-import type { AppState } from '@/lib/types';
+import type { AppState, AppEvent } from '@/lib/types';
 import type { CheckCompositionCommand } from './command';
 import { createCompositionCheckedEvent } from './event';
+import { createInitialState, applyEvent } from '@/app/data/events';
+import fs from 'fs';
+import path from 'path';
 
-export async function handleCheckCompositionCommand(state: AppState, command: CheckCompositionCommand) {
-  // This function now queries the in-memory state derived from events.json
-  // The logic mimics searching for how many times a drug is a component in others.
-  
-  let count = 0;
-  try {
-    const drugNameToFind = command.drugName.toLowerCase();
+function getCurrentState(): AppState {
+    const filePath = path.join(process.cwd(), 'DB', 'events.json');
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const initialEventData = JSON.parse(fileContent);
+    return (initialEventData as AppEvent[]).reduce(applyEvent, createInitialState());
+}
+
+
+export async function handleCheckCompositionCommand(command: CheckCompositionCommand): Promise<any> {
+    const state = getCurrentState();
+    const drug = state.drugs.get(command.drugId);
+    if (!drug) {
+      return createCompositionCheckedEvent({
+          drugId: command.drugId,
+          count: 0,
+          error: "Drug not found in local database."
+      });
+    }
     
-    // Search through the 'details' of all other drugs
-    for (const drug of state.drugs.values()) {
-        if (drug.details && Array.isArray(drug.details)) {
-            for (const detail of drug.details) {
-                if (detail.toLowerCase().includes(drugNameToFind)) {
-                    count++;
-                }
-            }
-        }
-    }
+    const filePath = path.join(process.cwd(), 'DB', 'events.json');
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const initialEventData = JSON.parse(fileContent);
 
-     // Search through the 'description' and 'reco_details' of all interactions
-     for (const interaction of state.interactions.values()) {
-        if (interaction.description.toLowerCase().includes(drugNameToFind)) {
-            count++;
-        }
-         if (Array.isArray(interaction.reco_details)) {
-            for (const detail of interaction.reco_details) {
-                if (detail.toLowerCase().includes(drugNameToFind)) {
-                    count++;
-                }
-            }
-         }
-    }
+    const compositionEvents = (initialEventData as AppEvent[]).filter(e => 
+        e.metadata.event_type === 'DrugAdded' && 
+        (e.payload as any).drug === drug.name
+    );
+
+    const count = compositionEvents.reduce((acc, curr) => {
+        const details = (curr.payload as any).drug_details;
+        return acc + (Array.isArray(details) ? details.length : 0);
+    }, 0);
 
 
     const event = createCompositionCheckedEvent({
@@ -43,13 +46,4 @@ export async function handleCheckCompositionCommand(state: AppState, command: Ch
       count: count,
     });
     return event;
-
-  } catch (error: any) {
-    const event = createCompositionCheckedEvent({
-      drugId: command.drugId,
-      count: 0,
-      error: error.message || 'An unknown error occurred while checking composition.',
-    });
-    return event;
-  }
 }

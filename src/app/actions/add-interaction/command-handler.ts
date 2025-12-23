@@ -1,9 +1,21 @@
 // src/app/actions/add-interaction/command-handler.ts
-import type { AppState } from '@/lib/types';
+"use server";
+import type { AppState, AppEvent } from '@/lib/types';
 import type { AddInteractionCommand } from './command';
 import { createInteractionAddedEvent } from './event';
+import { createInitialState, applyEvent } from '@/app/data/events';
+import fs from 'fs';
+import path from 'path';
 
-export function handleAddInteractionCommand(state: AppState, command: AddInteractionCommand) {
+function getCurrentState(): AppState {
+    const filePath = path.join(process.cwd(), 'DB', 'events.json');
+    const fileContent = fs.readFileSync(filePath, 'utf8');
+    const initialEventData = JSON.parse(fileContent);
+    return (initialEventData as AppEvent[]).reduce(applyEvent, createInitialState());
+}
+
+export async function handleAddInteractionCommand(command: AddInteractionCommand) {
+  const state = getCurrentState();
   // Business Rule: The two drugs must be different.
   if (command.drug1Id === command.drug2Id) {
     throw new Error('The two drugs must be different.');
