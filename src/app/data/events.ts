@@ -5,13 +5,13 @@ import { drugUpdatedReducer } from '@/app/actions/update-drug/reducer';
 import { interactionAddedReducer } from '@/app/actions/add-interaction/reducer';
 import { interactionDeletedReducer } from '@/app/actions/delete-interaction/reducer';
 import { interactionUpdatedReducer } from '@/app/actions/update-interaction/reducer';
-import { compositionCheckedReducer } from '@/app/actions/check-composition/reducer';
+import { drugFoundReducer } from '@/app/actions/lookup-drug/reducer';
 
 export function createInitialState(): AppState {
     return {
         drugs: new Map(),
         interactions: new Map(),
-        compositionResults: new Map(),
+        drugLookupResults: new Map(),
     };
 }
 
@@ -22,7 +22,7 @@ export const eventReducers: Record<string, (state: AppState, event: AppEvent) =>
   'InteractionAdded': interactionAddedReducer,
   'InteractionUpdated': interactionUpdatedReducer,
   'InteractionDeleted': interactionDeletedReducer,
-  'CompositionChecked': compositionCheckedReducer,
+  'DrugFound': drugFoundReducer,
 };
 
 export function applyEvent(state: AppState, event: AppEvent): AppState {

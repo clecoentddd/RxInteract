@@ -2,7 +2,7 @@
 "use client";
 
 import React, { createContext, useContext, useState, ReactNode, useMemo, useCallback } from 'react';
-import type { Drug, Interaction, AppEvent, AppState, CompositionResult } from '@/lib/types';
+import type { Drug, Interaction, AppEvent, AppState, DrugLookupResult } from '@/lib/types';
 import { useToast } from '@/hooks/use-toast';
 import { createInitialState, applyEvent } from '@/app/data/events';
 import initialEventData from '../../DB/events.json';
@@ -26,8 +26,9 @@ import { handleUpdateInteractionCommand } from '@/app/actions/update-interaction
 import type { DeleteInteractionCommand } from '@/app/actions/delete-interaction/command';
 import { handleDeleteInteractionCommand } from '@/app/actions/delete-interaction/command-handler';
 
-import type { CheckCompositionCommand } from '@/app/actions/check-composition/command';
-import { handleCheckCompositionCommand } from '@/app/actions/check-composition/command-handler';
+import type { LookupDrugCommand } from '@/app/actions/lookup-drug/command';
+import { handleLookupDrugCommand } from '@/app/actions/lookup-drug/command-handler';
+
 
 // Projections
 import { useListeDesMedicaments } from '@/app/projections/liste-des-medicaments/projection';
@@ -42,14 +43,14 @@ interface AppContextType {
   logout: () => void;
   drugs: Drug[];
   interactions: Interaction[];
-  compositionResults: Map<string, CompositionResult>;
+  drugLookupResults: Map<string, DrugLookupResult>;
   addDrug: (command: AddDrugCommand) => void;
   updateDrug: (command: UpdateDrugCommand) => void;
   deleteDrug: (command: DeleteDrugCommand) => void;
   addInteraction: (command: AddInteractionCommand) => void;
   updateInteraction: (command: UpdateInteractionCommand) => void;
   deleteInteraction: (command: DeleteInteractionCommand) => void;
-  checkComposition: (command: CheckCompositionCommand) => Promise<void>;
+  lookupDrug: (command: LookupDrugCommand) => Promise<void>;
   getDrugById: (id: string) => Drug | undefined;
 }
 
@@ -70,7 +71,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
   // Use projection slices to get the read models
   const drugs = useListeDesMedicaments(appState);
   const interactions = useListeDesInteractions(appState);
-  const compositionResults = appState.compositionResults;
+  const drugLookupResults = appState.drugLookupResults;
 
 
   // --- Authentication Slice ---
@@ -87,7 +88,7 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
       if (newEvent) {
         setEvents(prev => [...prev, newEvent]);
         
-        if (newEvent.metadata.event_type !== 'CompositionChecked') {
+        if (newEvent.metadata.event_type !== 'DrugFound') {
             toast({ title: "Success", description: successMessage });
         }
       }
@@ -125,10 +126,8 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     dispatchCommand(handleDeleteInteractionCommand, command, 'Interaction deleted.');
   };
 
-  const checkComposition = async (command: CheckCompositionCommand) => {
-    // Note: No client-side check. We always dispatch to let the server handle it.
-    // This simplifies the client and aligns with the event-sourced nature.
-    await dispatchCommand(handleCheckCompositionCommand, command, `Composition check for "${command.drugName}" complete.`);
+  const lookupDrug = async (command: LookupDrugCommand) => {
+    await dispatchCommand(handleLookupDrugCommand, command, `Data for "${command.drugName}" fetched.`);
   };
 
 
@@ -138,14 +137,14 @@ export const AppProvider = ({ children }: { children: ReactNode }) => {
     logout,
     drugs,
     interactions,
-    compositionResults,
+    drugLookupResults,
     addDrug,
     updateDrug,
     deleteDrug,
     addInteraction,
     updateInteraction,
     deleteInteraction,
-    checkComposition,
+    lookupDrug,
     getDrugById,
   };
 

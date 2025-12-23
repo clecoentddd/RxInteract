@@ -1,5 +1,5 @@
 import { InteractionChecker } from '@/components/interaction-checker';
-import { CompositionChecker } from '@/components/composition-checker';
+import { DrugLookup } from '@/components/drug-lookup';
 import { Separator } from '@/components/ui/separator';
 
 export default function Home() {
@@ -10,7 +10,7 @@ export default function Home() {
       </div>
       <Separator className="w-full max-w-4xl" />
       <div className="w-full max-w-4xl">
-        <CompositionChecker />
+        <DrugLookup />
       </div>
     </div>
   );

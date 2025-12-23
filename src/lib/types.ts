@@ -28,10 +28,10 @@ export const interactionFormSchema = z.object({
 
 export type InteractionFormValues = z.infer<typeof interactionFormSchema>;
 
-export type CompositionResult = {
-  drugId: string;
-  count: number;
-  error?: string;
+export type DrugLookupResult = {
+  drugName: string;
+  data: any;
+  error?: boolean;
   timestamp: number;
 }
 
@@ -68,21 +68,21 @@ export type InteractionDeletedPayload = {
 
 export type InteractionUpdatedPayload = Partial<Omit<Interaction, 'drug1Id' | 'drug2Id'>> & {id: string};
 
-export type CompositionCheckedPayload = {
-  drugId: string;
-  count: number;
-  error?: string;
+export type DrugFoundPayload = {
+  drugName: string;
+  data: any;
+  error: boolean;
 }
 
 
 export type AppEvent = {
   metadata: EventMetadata;
-  payload: DrugAddedPayload | DrugUpdatedPayload | InteractionAddedPayload | DrugDeletedPayload | InteractionUpdatedPayload | CompositionCheckedPayload | { [key: string]: any };
+  payload: DrugAddedPayload | DrugUpdatedPayload | InteractionAddedPayload | DrugDeletedPayload | InteractionUpdatedPayload | DrugFoundPayload | { [key: string]: any };
 };
 
 // State slices
 export interface AppState {
   drugs: Map<string, Drug>;
   interactions: Map<string, Interaction>;
-  compositionResults: Map<string, CompositionResult>;
+  drugLookupResults: Map<string, DrugLookupResult>;
 }
